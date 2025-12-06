@@ -5,6 +5,7 @@ EV Charging Station Viewer - Demo với 100 trạm có sẵn
 
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import geopandas as gpd
+import numpy as np
 import os
 
 app = Flask(__name__)
@@ -196,6 +197,115 @@ def get_stations():
         'stations': stations_list,
         'total': len(stations_list)
     })
+
+
+@app.route('/api/station/<int:station_id>')
+def get_station_details(station_id):
+    """API lấy chi tiết một trạm cụ thể với thông tin xung quanh"""
+    try:
+        if stations_data is None:
+            return jsonify({'success': False, 'error': 'No data'}), 404
+        
+        if station_id < 1 or station_id > len(stations_data):
+            return jsonify({'success': False, 'error': 'Invalid station ID'}), 400
+        
+        # Lấy thông tin trạm
+        station = stations_data.iloc[station_id - 1]
+        station_lat = float(station.geometry.y)
+        station_lon = float(station.geometry.x)
+        
+        # Thông tin cơ bản
+        result = {
+            'success': True,
+            'station': {
+                'id': station_id,
+                'lat': station_lat,
+                'lon': station_lon,
+                'score': float(station.get('score', 0)),
+                'dist_res': float(station.get('dist_res', 0)) if 'dist_res' in station else None,
+                'dist_sub': float(station.get('dist_sub', 0)) if 'dist_sub' in station else None,
+                'coverage': float(station.get('coverage', 0)) if 'coverage' in station else None
+            }
+        }
+        
+        # Tìm trạm biến áp gần nhất
+        if substations_data is not None and len(substations_data) > 0:
+            from scipy.spatial import distance
+            
+            sub_coords = np.array([[s.geometry.y, s.geometry.x] for _, s in substations_data.iterrows()])
+            station_coord = np.array([station_lat, station_lon])
+            distances = distance.cdist([station_coord], sub_coords, metric='euclidean')[0]
+            nearest_idx = np.argmin(distances)
+            nearest_sub = substations_data.iloc[nearest_idx]
+            
+            # Tính khoảng cách thực (km)
+            from algorithms.route_finder import haversine_distance
+            dist_km = haversine_distance(
+                station_lat, station_lon,
+                nearest_sub.geometry.y, nearest_sub.geometry.x
+            )
+            
+            result['nearest_substation'] = {
+                'name': nearest_sub.get('name', 'Unknown'),
+                'distance': round(dist_km, 2),
+                'lat': float(nearest_sub.geometry.y),
+                'lon': float(nearest_sub.geometry.x)
+            }
+        
+        # Tìm POI gần nhất (trong bán kính 1km)
+        if poi_data is not None and len(poi_data) > 0:
+            from scipy.spatial import distance
+            from algorithms.route_finder import haversine_distance
+            
+            nearby_pois = []
+            for idx, poi in poi_data.iterrows():
+                dist = haversine_distance(
+                    station_lat, station_lon,
+                    poi.geometry.y, poi.geometry.x
+                )
+                if dist <= 1.0:  # Trong bán kính 1km
+                    nearby_pois.append({
+                        'name': poi.get('name', 'Unknown'),
+                        'type': poi.get('fclass', 'unknown'),
+                        'distance': round(dist, 2)
+                    })
+            
+            # Sắp xếp theo khoảng cách
+            nearby_pois.sort(key=lambda x: x['distance'])
+            result['nearby_pois'] = nearby_pois[:5]  # Lấy 5 POI gần nhất
+        
+        # Đếm khu dân cư trong bán kính 500m
+        if residential_data is not None and len(residential_data) > 0:
+            from algorithms.route_finder import haversine_distance
+            
+            residential_count = 0
+            total_area = 0
+            
+            for idx, res in residential_data.iterrows():
+                # Tính khoảng cách đến trung tâm khu dân cư
+                res_center = res.geometry.centroid
+                dist = haversine_distance(
+                    station_lat, station_lon,
+                    res_center.y, res_center.x
+                )
+                if dist <= 0.5:  # Trong bán kính 500m
+                    residential_count += 1
+                    if hasattr(res.geometry, 'area'):
+                        total_area += res.geometry.area
+            
+            result['residential_coverage'] = {
+                'count': residential_count,
+                'within_500m': f'{residential_count} khu',
+                'total_area': round(total_area, 2)
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ Error getting station details: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/api/find_route', methods=['POST'])

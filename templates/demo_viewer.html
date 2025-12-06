@@ -458,27 +458,119 @@
             console.log('✅ Loaded POI:', poiData.length);
         }
 
-        // 6. Trạm sạc EV (marker màu theo điểm)
+        // 6. Trạm sạc EV (marker màu theo điểm) với popup chi tiết
         stations.forEach(station => {
             const color = station.score >= 70 ? 'green' : 
                          station.score >= 50 ? 'blue' : 'orange';
             
-            L.marker([station.lat, station.lon], {
+            const marker = L.marker([station.lat, station.lon], {
                 icon: L.icon({
                     iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
                     iconSize: [25, 41],
                     iconAnchor: [12, 41],
                     popupAnchor: [1, -34]
                 })
-            })
-            .bindPopup(`
-                <b>🔌 Trạm #${station.id}</b><br>
-                <hr style="margin: 5px 0;">
-                ⭐ Điểm: <b>${station.score.toFixed(1)}/100</b><br>
-                🌍 Lat: ${station.lat.toFixed(6)}<br>
-                🌍 Lon: ${station.lon.toFixed(6)}
-            `)
-            .addTo(layerGroups.evStations);
+            });
+            
+            // Popup ban đầu (loading)
+            marker.bindPopup(`
+                <div style="min-width: 250px;">
+                    <b>🔌 Trạm #${station.id}</b><br>
+                    <hr style="margin: 5px 0;">
+                    <div class="spinner" style="display: inline-block;"></div> Đang tải thông tin...
+                </div>
+            `);
+            
+            // Khi click vào marker, load chi tiết
+            marker.on('click', async function() {
+                try {
+                    const response = await fetch(`/api/station/${station.id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        let popupContent = `
+                            <div style="min-width: 280px; font-family: Arial;">
+                                <h3 style="margin: 0 0 10px 0; color: #667eea;">🔌 Trạm #${station.id}</h3>
+                                <hr style="margin: 10px 0; border: 1px solid #e0e0e0;">
+                                
+                                <div style="margin: 8px 0;">
+                                    <b>⭐ Điểm số:</b> <span style="color: #27ae60; font-weight: bold;">${data.station.score.toFixed(1)}/100</span>
+                                </div>
+                                
+                                <div style="margin: 8px 0;">
+                                    <b>📍 Tọa độ:</b> ${station.lat.toFixed(5)}, ${station.lon.toFixed(5)}
+                                </div>
+                        `;
+                        
+                        // Thông tin trạm biến áp
+                        if (data.nearest_substation) {
+                            popupContent += `
+                                <hr style="margin: 10px 0; border: 1px solid #e0e0e0;">
+                                <div style="margin: 8px 0;">
+                                    <b>⚡ Trạm biến áp gần nhất:</b><br>
+                                    <span style="margin-left: 20px;">${data.nearest_substation.name}</span><br>
+                                    <span style="margin-left: 20px; color: #3498db;">📏 ${data.nearest_substation.distance} km</span>
+                                </div>
+                            `;
+                        }
+                        
+                        // Thông tin khu dân cư
+                        if (data.residential_coverage) {
+                            popupContent += `
+                                <hr style="margin: 10px 0; border: 1px solid #e0e0e0;">
+                                <div style="margin: 8px 0;">
+                                    <b>🏘️ Phủ sóng dân cư (500m):</b><br>
+                                    <span style="margin-left: 20px;">${data.residential_coverage.within_500m}</span>
+                                </div>
+                            `;
+                        }
+                        
+                        // POI gần nhất
+                        if (data.nearby_pois && data.nearby_pois.length > 0) {
+                            popupContent += `
+                                <hr style="margin: 10px 0; border: 1px solid #e0e0e0;">
+                                <div style="margin: 8px 0;">
+                                    <b>📍 POI gần nhất (1km):</b>
+                                    <ul style="margin: 5px 0; padding-left: 20px; font-size: 13px;">
+                            `;
+                            
+                            data.nearby_pois.slice(0, 3).forEach(poi => {
+                                const poiIcon = {
+                                    'school': '🏫',
+                                    'hospital': '🏥',
+                                    'mall': '🏬',
+                                    'supermarket': '🛒',
+                                    'park': '🌳'
+                                }[poi.type] || '📍';
+                                
+                                popupContent += `
+                                    <li>${poiIcon} ${poi.name || poi.type} 
+                                        <span style="color: #3498db;">(${poi.distance} km)</span>
+                                    </li>
+                                `;
+                            });
+                            
+                            popupContent += `</ul></div>`;
+                        }
+                        
+                        popupContent += `</div>`;
+                        
+                        marker.setPopupContent(popupContent);
+                    }
+                } catch (error) {
+                    console.error('Error loading station details:', error);
+                    marker.setPopupContent(`
+                        <div style="min-width: 250px;">
+                            <b>🔌 Trạm #${station.id}</b><br>
+                            <hr style="margin: 5px 0;">
+                            ⭐ Điểm: <b>${station.score.toFixed(1)}/100</b><br>
+                            <span style="color: red;">❌ Không thể tải thông tin chi tiết</span>
+                        </div>
+                    `);
+                }
+            });
+            
+            marker.addTo(layerGroups.evStations);
         });
         console.log('✅ Loaded', stations.length, 'stations on map');
 
