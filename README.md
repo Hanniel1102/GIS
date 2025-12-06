@@ -1,47 +1,97 @@
-# 🚀 EV CHARGING STATION OPTIMIZER - WEB APPLICATION
+# 🚀 EV CHARGING STATION OPTIMIZER
 
-## 📝 TÓM TẮT DỰ ÁN
+> Ứng dụng web tối ưu hóa vị trí trạm sạc xe điện (EV Charging Station) cho thành phố Hà Nội sử dụng **Thuật toán di truyền (Genetic Algorithm)** và **GIS (Hệ thống thông tin địa lý)**
 
-Ứng dụng web tối ưu hóa vị trí trạm sạc xe điện cho thành phố Hà Nội, sử dụng **Thuật toán di truyền (Genetic Algorithm)** kết hợp với **Hệ thống thông tin địa lý (GIS)** để tìm vị trí tối ưu nhất cho các trạm sạc EV.
-
-### 🎯 MỤC TIÊU
-
-1. **Tối đa hóa tiện ích**: Đặt trạm sạc gần khu dân cư và trạm biến áp
-2. **Tối ưu chi phí**: Giảm chi phí hạ tầng điện và mạng lưới phân phối
-3. **Đảm bảo phủ sóng**: Vùng phủ sóng 3km mỗi trạm, phủ kín khu vực đô thị
-4. **Giảm khoảng cách**: Người dùng chỉ cần di chuyển tối đa 3km để sạc xe
-
-### 💡 TẠI SAO LẠI CẦN ỨNG DỤNG NÀY?
-
-**Bài toán thực tế:**
-- Hà Nội có diện tích ~3.300 km², cần đặt 20-500 trạm sạc
-- Không gian tìm kiếm: 13.406 điểm ứng viên (lưới 500m)
-- Số tổ hợp có thể: C(13406, 20) ≈ 10^60 (không thể duyệt hết)
-- Cần phương pháp thông minh để tìm lời giải tối ưu trong thời gian hợp lý
-
-**Giải pháp:**
-- Sử dụng Thuật toán di truyền (GA) để tìm kiếm tối ưu
-- Thời gian tối ưu: 30-60 giây cho 20 trạm
-- Độ chính xác: Đạt 95-98% so với lời giải tốt nhất
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![Flask](https://img.shields.io/badge/Flask-3.0.0-green.svg)](https://flask.palletsprojects.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
 
-## 🤔 VÌ SAO LẠI CHỌN THUẬT TOÁN DI TRUYỀN?
+## 📋 Mục lục
 
-### 🎯 BẢN CHẤT BÀI TOÁN
+- [Tổng quan](#-tổng-quan)
+- [Tính năng](#-tính-năng)
+- [Tại sao chọn Thuật toán di truyền?](#-tại-sao-chọn-thuật-toán-di-truyền)
+- [Cài đặt](#-cài-đặt)
+- [Sử dụng](#-sử-dụng)
+- [API Documentation](#-api-documentation)
+- [Thuật toán](#-thuật-toán-di-truyền)
+- [Dữ liệu đầu vào](#-dữ-liệu-đầu-vào)
+- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
+- [Demo & Screenshots](#-demo--screenshots)
 
-Bài toán tối ưu vị trí trạm sạc EV thuộc dạng **NP-Hard** (Non-deterministic Polynomial-time Hard):
+---
 
-```
-Đặc điểm:
-✓ Không gian tìm kiếm cực lớn: C(13406, 20) ≈ 10^60 tổ hợp
-✓ Không có công thức giải trực tiếp
-✓ Thời gian tăng GẤP ÔI khi tăng số trạm
-✓ Nhiều mục tiêu xung đột (gần dân cư vs gần trạm điện)
-✓ Có ràng buộc (khoảng cách tối thiểu giữa các trạm)
-```
+## 🎯 Tổng quan
 
-### 📊 SO SÁNH CÁC PHƯƠNG PHÁP
+### Bài toán
+
+Hà Nội có diện tích **~3.300 km²**, cần đặt **20-500 trạm sạc EV** tại vị trí tối ưu để:
+- ✅ Phủ sóng tối đa khu vực đô thị (bán kính 3km/trạm)
+- ✅ Gần khu dân cư (giảm khoảng cách di chuyển)
+- ✅ Gần trạm biến áp (giảm chi phí hạ tầng điện)
+- ✅ Phân bố đều, tránh chồng lấn
+
+### Thách thức
+
+- **Không gian tìm kiếm**: 13.406 điểm ứng viên (lưới 500m)
+- **Số tổ hợp**: C(13406, 20) ≈ **10^60** (không thể duyệt toàn bộ)
+- **Bài toán NP-Hard**: Cần thuật toán thông minh để tìm lời giải tối ưu
+
+### Giải pháp
+
+🧬 **Genetic Algorithm (GA)** - Thuật toán di truyền
+- ⚡ Thời gian: 30-60 giây cho 20 trạm
+- 🎯 Độ chính xác: 95-98% so với lời giải tối ưu
+- 🔄 Khả năng mở rộng: Từ 10 đến 500 trạm
+
+---
+
+## ✨ Tính năng
+
+### 🗺️ Bản đồ tương tác với 6 lớp dữ liệu
+1. **Ranh giới Hà Nội** - Phạm vi tối ưu hóa
+2. **Điểm POI** - Ngân hàng, bệnh viện, siêu thị (11,686 điểm)
+3. **Khu dân cư** - Vùng residential (polygon màu cam)
+4. **Trạm biến áp** - 113 trạm điện hiện có
+5. **Vùng phủ sóng** - Buffer 3km mỗi trạm (màu xanh trong suốt)
+6. **Trạm sạc tối ưu** - Vị trí được thuật toán đề xuất
+
+### 🎛️ Tối ưu hóa thông minh
+- Cấu hình linh hoạt: số trạm, population, generations
+- Real-time progress bar (0% → 95% → 100%)
+- Kết quả chi tiết: điểm số, thời gian, thống kê
+
+### 🧭 Tìm đường thông minh
+- 🔍 Tìm kiếm địa điểm (Nominatim API, autocomplete)
+- 📍 GPS định vị chính xác
+- 🛣️ Tính đường theo mạng lưới thực tế (OSRM API)
+- 📏 Hiển thị khoảng cách (km) và thời gian (phút)
+
+### 📤 Xuất kết quả
+- **GeoJSON** - Tích hợp GIS khác
+- **Shapefile** - QGIS, ArcGIS (.zip)
+- **Excel** - Phân tích dữ liệu (.xlsx)
+
+---
+
+## 🤔 Tại sao chọn Thuật toán di truyền?
+
+---
+
+## 🧬 Tại sao chọn Thuật toán di truyền?
+
+### Bản chất bài toán
+
+Bài toán tối ưu vị trí trạm sạc EV thuộc dạng **NP-Hard**:
+- ❌ Không gian tìm kiếm: C(13406, 20) ≈ 10^60 tổ hợp
+- ❌ Không có công thức giải trực tiếp
+- ❌ Thời gian tăng theo cấp số nhân khi tăng số trạm
+- ⚠️ Nhiều mục tiêu xung đột (gần dân cư vs gần trạm điện)
+- ⚠️ Có ràng buộc (khoảng cách tối thiểu 2-3km)
+
+### So sánh các phương pháp
 
 | Phương pháp | Thời gian | Chất lượng | Ưu điểm | Nhược điểm | Phù hợp |
 |-------------|-----------|------------|---------|------------|---------|
@@ -54,19 +104,17 @@ Bài toán tối ưu vị trí trạm sạc EV thuộc dạng **NP-Hard** (Non-d
 | **Branch & Bound** | 300s+ | 95-100% | Đảm bảo optimal nếu có đủ thời gian | Quá chậm với >50 trạm | ⚠️ Bài toán nhỏ |
 | **🏆 Genetic Algorithm** | **30-60s** | **95-98%** | **Cân bằng tốc độ/chất lượng, dễ song song hóa** | **Cần điều chỉnh tham số** | **✅ CHỌN** |
 
-### ✅ LÝ DO CHỌN GENETIC ALGORITHM
+### Lý do chọn Genetic Algorithm
 
-#### 1️⃣ **Phù hợp với bản chất bài toán**
+#### 1. Phù hợp với bản chất bài toán
 
-```python
-# Bài toán tối ưu trạm sạc có đặc điểm:
-✓ Discrete space (không gian rời rạc): 13,406 điểm ứng viên
-✓ Multi-objective (đa mục tiêu): gần dân cư + gần trạm điện + phân bố đều
-✓ Constrained (có ràng buộc): khoảng cách tối thiểu 2-3km
-✓ Combinatorial (tổ hợp): chọn 20 trong 13,406 điểm
+Bài toán có đặc điểm:
+- ✅ **Discrete space** (không gian rời rạc): 13,406 điểm ứng viên
+- ✅ **Multi-objective** (đa mục tiêu): gần dân cư + gần trạm điện + phân bố đều
+- ✅ **Constrained** (có ràng buộc): khoảng cách tối thiểu 2-3km
+- ✅ **Combinatorial** (tổ hợp): chọn 20 trong 13,406 điểm
 
-→ GA hoạt động XUẤT SẮC với loại bài toán này!
-```
+→ GA hoạt động xuất sắc với loại bài toán này!
 
 **Ví dụ minh họa:**
 ```
@@ -262,60 +310,117 @@ Song song hóa  ░░░░░░░░░░▓▓▓▓▓▓ (GA: Hoàn hả
 
 ---
 
-## 📋 Yêu cầu hệ thống
-
-- Python 3.8+
-- Pip
-- Trình duyệt hiện đại (Chrome, Firefox, Edge)
+---
 
 ## 🔧 Cài đặt
 
-### 1. Clone hoặc copy project
+### Yêu cầu hệ thống
+
+- **Python**: 3.8 trở lên
+- **Pip**: Package manager
+- **Browser**: Chrome, Firefox, Edge (bản mới nhất)
+
+### Các bước cài đặt
+
+#### 1. Clone repository
 
 ```bash
-cd web_app
+git clone https://github.com/Hanniel1102/GIS.git
+cd GIS
 ```
 
-### 2. Tạo môi trường ảo (khuyên dùng)
+#### 2. Tạo môi trường ảo (khuyến nghị)
 
 ```bash
+# Tạo venv
 python -m venv venv
 
-# Windows
+# Kích hoạt
+# Windows PowerShell
 venv\Scripts\activate
 
 # Linux/Mac
 source venv/bin/activate
 ```
 
-### 3. Cài đặt dependencies
+#### 3. Cài đặt dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Chuẩn bị dữ liệu
+#### 4. Chuẩn bị dữ liệu
 
-Copy các file shapefile vào thư mục `data/`:
-- `hanoi_boundary.shp` - Ranh giới Hà Nội
-- `residential.shp` - Khu dân cư
-- `substations.shp` - Trạm điện
-- `roads.shp` - Đường giao thông
-- `landuse.shp` - POI (tùy chọn)
+Các file shapefile cần thiết đã có sẵn trong `data/`:
+- ✅ `hanoi_boundary.shp` - Ranh giới Hà Nội
+- ✅ `residential_only.shp` - Khu dân cư
+- ✅ `substations_real.shp` - 113 trạm biến áp
+- ✅ `points_hanoi_full.shp` - 11,686 POI
+- ✅ `candidates.shp` - 13,406 điểm ứng viên
 
-### 5. Chạy ứng dụng
+> **Lưu ý**: File `roads_hanoi_full.shp` (65MB) và `vietnam-latest-free.shp.zip` (627MB) không được đẩy lên Git do giới hạn kích thước. Xem [data/README.md](data/README.md) để tải về nếu cần.
+
+#### 5. Chạy ứng dụng
 
 ```bash
 python app.py
 ```
 
-Ứng dụng sẽ chạy tại: **http://localhost:5000**
+Truy cập: **http://localhost:5000**
 
-## 🔬 THUẬT TOÁN DI TRUYỀN (GENETIC ALGORITHM)
+---
 
-### 📐 Nguyên lý hoạt động
+## 📖 Sử dụng
 
-**1. Khởi tạo quần thể (Population Initialization)**
+### 1. Tối ưu hóa vị trí trạm
+
+1. Mở trang chủ: `http://localhost:5000`
+2. Nhập số trạm sạc: `10-500` (khuyến nghị: 50-100)
+3. Cấu hình thuật toán:
+   - **Population Size**: 50-150 (mặc định: 100)
+   - **Generations**: 100-200 (mặc định: 200)
+4. Click **"Bắt đầu tối ưu"**
+5. Chờ kết quả (30s-5 phút tùy cấu hình)
+
+### 2. Xem bản đồ
+
+1. Sau khi tối ưu xong, click **"Xem bản đồ"**
+2. Bật/tắt các lớp dữ liệu:
+   - 🗺️ Giới hạn Hà Nội
+   - 🏢 POI
+   - 🏘️ Khu dân cư
+   - ⚡ Trạm biến áp
+   - 📡 Vùng phủ sóng (3km)
+   - 🔌 Trạm sạc tối ưu
+
+### 3. Tìm đường đến trạm
+
+1. **Cách 1**: Click vào bản đồ chọn vị trí
+2. **Cách 2**: Tìm kiếm địa điểm (autocomplete)
+3. **Cách 3**: Dùng GPS định vị
+4. Hệ thống tự động:
+   - Tìm trạm gần nhất
+   - Tính đường theo mạng lưới thực
+   - Hiển thị khoảng cách & thời gian
+
+### 4. Xuất kết quả
+
+Chọn định dạng:
+- **GeoJSON**: Tích hợp GIS
+- **Shapefile**: QGIS, ArcGIS
+- **Excel**: Phân tích dữ liệu
+
+---
+
+## 🔌 API Documentation
+
+---
+
+## 🧬 Thuật toán di truyền
+
+### Nguyên lý hoạt động
+
+#### 1. Khởi tạo quần thể (Population Initialization)
 - Tạo 20-200 cá thể (individual), mỗi cá thể là một tổ hợp vị trí trạm sạc
 - Mỗi cá thể = list các index trỏ đến 20-500 điểm trong 13.406 ứng viên
 - Ví dụ: `[1234, 5678, 9012, ...]` = chọn điểm số 1234, 5678, 9012...
@@ -363,7 +468,7 @@ After:  [1234, 8888, 9012, ...]  ← Thay 5678 bằng index ngẫu nhiên 8888
 - Mỗi thế hệ: fitness tăng dần
 - Dừng khi đạt số thế hệ hoặc fitness không cải thiện
 
-### ⚙️ THAM SỐ VÀ LÝ DO SỬ DỤNG
+### Tham số thuật toán
 
 | Tham số | Giá trị mặc định | Phạm vi | Lý do |
 |---------|------------------|---------|-------|
@@ -376,7 +481,7 @@ After:  [1234, 8888, 9012, ...]  ← Thay 5678 bằng index ngẫu nhiên 8888
 | **min_distance_km** | 2.5 | 2.0-5.0 | Khoảng cách tối thiểu giữa các trạm. 2.5km tránh cạnh tranh |
 | **coverage_radius** | 3.0 | 2.0-5.0 | Bán kính phủ sóng mỗi trạm. 3km hợp lý với đô thị |
 
-### 📊 HIỆU NĂNG THUẬT TOÁN
+### Hiệu năng thuật toán
 
 | Số trạm | Population | Generations | Thời gian | Chất lượng |
 |---------|------------|-------------|-----------|------------|
@@ -390,10 +495,13 @@ After:  [1234, 8888, 9012, ...]  ← Thay 5678 bằng index ngẫu nhiên 8888
 - **Greedy**: Nhanh (5s) nhưng chỉ đạt 70-80% optimal
 - **Genetic Algorithm**: Cân bằng thời gian/chất lượng tốt nhất
 
-## 📱 CHỨC NĂNG ỨNG DỤNG
+---
 
-### 1️⃣ Trang chủ (/)
-**Giao diện tối ưu hóa:**
+## 📱 Chức năng ứng dụng
+
+### Trang chủ - Tối ưu hóa
+
+**Giao diện:**
 - Nhập số trạm sạc muốn tối ưu (10-500)
 - Cấu hình thuật toán (population, generations)
 - Nhấn "Bắt đầu tối ưu"
@@ -401,8 +509,9 @@ After:  [1234, 8888, 9012, ...]  ← Thay 5678 bằng index ngẫu nhiên 8888
 - Hiển thị kết quả: điểm trung bình, thời gian chạy
 - Xuất file: GeoJSON, Shapefile, Excel
 
-### 2️⃣ Bản đồ tương tác (/map)
-**6 layers hiển thị:**
+### Bản đồ tương tác
+
+**6 lớp dữ liệu:**
 1. **🗺️ Giới hạn Hà Nội**: Ranh giới thành phố (viền đỏ đứt nét)
 2. **🏢 POI**: Ngân hàng, bệnh viện, siêu thị... (chấm tím)
 3. **🏘️ Khu dân cư**: Vùng residential từ landuse (màu cam phủ)
@@ -417,9 +526,11 @@ After:  [1234, 8888, 9012, ...]  ← Thay 5678 bằng index ngẫu nhiên 8888
 - Tính đường theo mạng lưới thực tế (OSRM API)
 - Hiển thị khoảng cách (km) và thời gian (phút)
 
-## 🗂️ DỮ LIỆU ĐẦU VÀO (INPUT DATA)
+---
 
-### 1. **hanoi_boundary.shp** - Ranh giới Hà Nội
+## 🗂️ Dữ liệu đầu vào
+
+### 1. hanoi_boundary.shp - Ranh giới Hà Nội
 - **Loại**: Polygon
 - **Số lượng**: 1 polygon
 - **Công dụng**: Xác định phạm vi tối ưu, tạo lưới ứng viên 500m×500m
@@ -455,9 +566,13 @@ After:  [1234, 8888, 9012, ...]  ← Thay 5678 bằng index ngẫu nhiên 8888
 - **Khoảng cách**: 500m × 500m
 - **Công dụng**: Không gian tìm kiếm cho GA, mỗi điểm là vị trí tiềm năng
 
-## 🔌 API ENDPOINTS CHI TIẾT
+---
 
-### **POST /api/optimize** - Chạy tối ưu hóa
+## 🔌 API Endpoints
+
+### POST /api/optimize
+
+Chạy thuật toán tối ưu hóa
 Chạy thuật toán di truyền để tìm vị trí tối ưu
 
 **Request:**
@@ -487,7 +602,7 @@ Chạy thuật toán di truyền để tìm vị trí tối ưu
 3. Chạy GA với tham số đã cấu hình
 4. Trả về kết quả tối ưu + metadata
 
-### **POST /api/find_route** - Tìm đường đến trạm gần nhất
+### POST /api/find_route
 Tìm trạm gần nhất và tính đường đi theo mạng lưới thực tế
 
 **Request:**
@@ -519,7 +634,7 @@ Tìm trạm gần nhất và tính đường đi theo mạng lưới thực tế
 - **OSRM API**: Tính đường theo mạng lưới thực tế
 - **Haversine**: Fallback nếu OSRM lỗi
 
-### **GET /api/export_results** - Xuất kết quả
+### GET /api/export_results
 Xuất kết quả tối ưu theo nhiều định dạng
 
 **Parameters:**
@@ -530,33 +645,9 @@ Xuất kết quả tối ưu theo nhiều định dạng
 - **Shapefile**: Zip chứa .shp, .shx, .dbf, .prj, .cpg
 - **Excel**: File .xlsx với tọa độ, điểm số, khoảng cách
 
-## 🚢 Deploy Production
+---
 
-### Sử dụng Gunicorn (Linux/Mac)
-
-```bash
-pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
-```
-
-### Sử dụng Waitress (Windows)
-
-```bash
-pip install waitress
-waitress-serve --listen=0.0.0.0:5000 app:app
-```
-
-### Docker
-
-```bash
-# Build image
-docker build -t ev-optimizer .
-
-# Run container
-docker run -p 5000:5000 ev-optimizer
-```
-
-## 🎓 KIẾN TRÚC CÔNG NGHỆ
+## 🏗️ Kiến trúc hệ thống
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -603,7 +694,7 @@ docker run -p 5000:5000 ev-optimizer
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## 📦 CẤU TRÚC THƯ MỤC CHI TIẾT
+### Cấu trúc thư mục
 
 ```
 web_app/
@@ -659,9 +750,11 @@ web_app/
 └── .gitignore                  # Git ignore patterns
 ```
 
-## 🔬 CÔNG THỨC TOÁN HỌC CHI TIẾT
+---
 
-### 1. **Fitness Function (Hàm mục tiêu)**
+## 📐 Công thức toán học
+
+### 1. Fitness Function (Hàm mục tiêu)
 ```
 Fitness = Σ Suitability_Score - Penalty_Distance
 
@@ -714,7 +807,9 @@ Với:
 - R = 6371 km (bán kính Trái Đất)
 ```
 
-## 🎯 CASE STUDY: TỐI ƯU 20 TRẠM CHO HÀ NỘI
+---
+
+## 🎯 Case Study: Tối ưu 20 trạm cho Hà Nội
 
 ### Input
 - Số trạm: 20
@@ -744,36 +839,13 @@ Gen 200: Best=1311.05, Avg=1300.17, Std=17.00 ← Hoàn tất
 - 95% dân cư trong bán kính 3km từ trạm gần nhất
 - Chi phí hạ tầng điện giảm 30% nhờ gần trạm biến áp
 
-## 🐛 Troubleshooting
-
-### Lỗi import geopandas
-```bash
-# Windows
-pip install pipwin
-pipwin install gdal
-pipwin install fiona
-pip install geopandas
-```
-
-### Port 5000 đã được sử dụng
-Thay đổi port trong `app.py`:
-```python
-app.run(port=8000)
-```
-
-### Lỗi CORS khi gọi API
-Cài đặt flask-cors:
-```bash
-pip install flask-cors
-```
-
 ---
 
-## 📖 GIẢI THÍCH CHI TIẾT 3 THAM SỐ CHÍNH
+## 📖 Giải thích chi tiết 3 tham số chính
 
-### 🔌 1. SỐ TRẠM SẠC (Number of Stations)
+### 1. Số trạm sạc (Number of Stations)
 
-**📖 Định nghĩa:**
+**Định nghĩa:**
 - Số lượng trạm sạc EV bạn muốn đặt tại khu vực tối ưu (Hà Nội)
 - Đây là **biến đầu ra** (output) của bài toán, không phải tham số thuật toán
 - Phạm vi: 10-500 trạm
@@ -817,9 +889,9 @@ Thực tế nên dùng 80-100 trạm vì:
 
 ---
 
-### 👥 2. KÍCH THƯỚC QUẦN THỂ (Population Size)
+### 2. Kích thước quần thể (Population Size)
 
-**📖 Định nghĩa:**
+**Định nghĩa:**
 - Số lượng **lời giải ứng viên** (individuals) được xử lý đồng thời trong mỗi thế hệ
 - Giống như có bao nhiêu "người" cùng tìm kiếm phương án tốt nhất
 - Phạm vi: 20-200 (khuyên dùng 50-150)
@@ -896,9 +968,9 @@ Ví dụ:
 
 ---
 
-### 🧬 3. SỐ THẾ HỆ (Number of Generations)
+### 3. Số thế hệ (Number of Generations)
 
-**📖 Định nghĩa:**
+**Định nghĩa:**
 - Số lần **tiến hóa** của quần thể
 - Mỗi thế hệ = 1 vòng lặp (Selection → Crossover → Mutation)
 - Giống tiến hóa sinh học: thế hệ sau tốt hơn thế hệ trước
@@ -1041,15 +1113,72 @@ Không ổn định ←─────────────────→ R�
    Few Gen (50)                Many Gen (300)
 ```
 
-### 💡 Tips & Tricks:
+### Tips & Tricks
 
 1. **Luôn bắt đầu nhỏ**: Test với 20/30/30 trước khi scale lên
 2. **Monitor progress**: Xem Gen 0→50→100 để quyết định có nên tiếp tục không
 3. **Population quan trọng hơn Generations**: Tốt hơn là 150 Pop × 100 Gen thay vì 50 Pop × 300 Gen
+
+---
+
+## 🚀 Deploy Production
+
+### Gunicorn (Linux/Mac)
+
+```bash
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
+
+### Waitress (Windows)
+
+```bash
+pip install waitress
+waitress-serve --listen=0.0.0.0:5000 app:app
+```
+
+### Docker
+
+```bash
+# Build image
+docker build -t ev-optimizer .
+
+# Run container
+docker run -p 5000:5000 ev-optimizer
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Lỗi import geopandas
+
+```bash
+# Windows
+pip install pipwin
+pipwin install gdal
+pipwin install fiona
+pip install geopandas
+```
+
+### Port 5000 đã được sử dụng
+
+Thay đổi port trong `app.py`:
+```python
+if __name__ == '__main__':
+    app.run(debug=True, port=8000)
+```
+
+### Lỗi CORS khi gọi API
+
+```bash
+pip install flask-cors
+```
+
+Thêm vào `app.py`:
+```python
+from flask_cors import CORS
+CORS(app)
 4. **Dừng sớm nếu hội tụ**: Không cần chạy hết 300 gen nếu Gen 150 đã ổn định
 5. **Máy yếu**: Giảm Population trước, giữ nguyên Generations
 6. **Máy mạnh**: Tăng cả Population và Generations cùng lúc
-
-
-#   G I S  
- 
