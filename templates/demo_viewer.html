@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản đồ Trạm sạc EV - Hà Nội (Demo)</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+
+        #header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        #header .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        #stats {
+            display: flex;
+            gap: 20px;
+            padding: 20px 30px;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .stat-card {
+            flex: 1;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-card .label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        #map-container {
+            position: relative;
+            height: calc(100vh - 180px);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        #search-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            width: 350px;
+            max-height: calc(100vh - 220px);
+            overflow-y: auto;
+        }
+
+        #search-panel h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        #result {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        #result h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        #result .info {
+            font-size: 14px;
+            margin: 5px 0;
+            color: #555;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            padding: 10px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        /* Location Options Styling */
+        #location-options {
+            margin-top: 15px;
+            display: none;
+        }
+
+        #location-options h4 {
+            color: #667eea;
+            font-size: 16px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .location-option {
+            padding: 15px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .location-option:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8eaff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .location-option .name {
+            font-weight: 700;
+            font-size: 15px;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .location-option .name i {
+            color: #667eea;
+            font-size: 16px;
+        }
+
+        .location-option .address {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 6px;
+            padding-left: 24px;
+        }
+
+        .location-option .type {
+            font-size: 11px;
+            color: #999;
+            padding: 4px 8px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            display: inline-block;
+            margin-left: 24px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1><i class="fas fa-charging-station"></i> Bản đồ Trạm sạc EV - Hà Nội</h1>
+        <div class="badge">
+            <i class="fas fa-check-circle"></i> DEMO MODE - Dữ liệu có sẵn
+        </div>
+    </div>
+
+    <div id="stats">
+        <div class="stat-card">
+            <div class="label">Tổng số trạm</div>
+            <div class="value">{{ num_stations }}</div>
+            <div class="label">trạm sạc</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Điểm trung bình</div>
+            <div class="value">{{ avg_score }}</div>
+            <div class="label">/ 100 điểm</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">Thuật toán</div>
+            <div class="value"><i class="fas fa-dna"></i></div>
+            <div class="label">Genetic Algorithm</div>
+        </div>
+    </div>
+
+    <div id="map-container">
+        <div id="map"></div>
+
+        <div id="search-panel">
+            <h3><i class="fas fa-route"></i> Tìm trạm gần nhất</h3>
+            
+            <div class="input-group">
+                <input type="text" 
+                       id="locationInput" 
+                       placeholder="Nhập địa điểm hoặc tọa độ (lat, lon)">
+            </div>
+
+            <button class="btn btn-primary" onclick="findRoute()">
+                <i class="fas fa-search"></i> Tìm đường
+            </button>
+
+            <button class="btn btn-secondary" onclick="useGPS()">
+                <i class="fas fa-location-arrow"></i> Dùng vị trí hiện tại
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                Đang tìm kiếm...
+            </div>
+
+            <div id="location-options">
+                <h4><i class="fas fa-map-marked-alt"></i> Chọn chi nhánh</h4>
+                <div id="options-list"></div>
+            </div>
+
+            <div id="result">
+                <h4><i class="fas fa-map-marker-alt"></i> Trạm gần nhất</h4>
+                <div class="info"><strong>Trạm:</strong> <span id="stationId"></span></div>
+                <div class="info"><strong>Khoảng cách:</strong> <span id="distance"></span></div>
+                <div class="info"><strong>Thời gian:</strong> <span id="duration"></span></div>
+                <div class="info"><strong>Điểm:</strong> <span id="score"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Dữ liệu từ backend
+        const stations = {{ stations_json | tojson }};
+        const boundaryData = {% if boundary_json %}{{ boundary_json | safe }}{% else %}null{% endif %};
+        const residentialData = {% if residential_json %}{{ residential_json | safe }}{% else %}null{% endif %};
+        const substationsData = {{ substations_json | tojson }};
+        const poiData = {{ poi_json | tojson }};
+        const roadsData = {% if roads_json %}{{ roads_json | safe }}{% else %}null{% endif %};
+
+        // Khởi tạo bản đồ
+        const map = L.map('map').setView([21.0285, 105.8542], 12);
+
+        // Thêm tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Layer groups để toggle on/off
+        const layerGroups = {
+            boundary: L.layerGroup().addTo(map),
+            roads: L.layerGroup().addTo(map),
+            residential: L.layerGroup().addTo(map),
+            substations: L.layerGroup().addTo(map),
+            poi: L.layerGroup().addTo(map),
+            evStations: L.layerGroup().addTo(map),
+            routes: L.layerGroup()
+        };
+
+        // 1. Ranh giới Hà Nội (đỏ nét đứt)
+        if (boundaryData && boundaryData.type === 'FeatureCollection') {
+            try {
+                L.geoJSON(boundaryData, {
+                    style: {
+                        color: '#ff0000',
+                        weight: 3,
+                        fillOpacity: 0,
+                        dashArray: '10, 5'
+                    }
+                }).addTo(layerGroups.boundary);
+                console.log('✅ Loaded boundary layer');
+            } catch(e) {
+                console.warn('⚠️ Error loading boundary:', e);
+            }
+        }
+
+        // 2. Roads - Đường giao thông (xám)
+        if (roadsData && roadsData.type === 'FeatureCollection') {
+            try {
+                L.geoJSON(roadsData, {
+                    style: {
+                        color: '#757575',
+                        weight: 2,
+                        opacity: 0.6
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            layer.bindPopup(`<b>🛣️ ${feature.properties.name}</b>`);
+                        }
+                    }
+                }).addTo(layerGroups.roads);
+                console.log('✅ Loaded roads layer');
+            } catch(e) {
+                console.warn('⚠️ Error loading roads:', e);
+            }
+        }
+
+        // 3. Khu dân cư (vàng nhạt)
+        if (residentialData && residentialData.type === 'FeatureCollection') {
+            try {
+                L.geoJSON(residentialData, {
+                    style: {
+                        color: '#ffeb3b',
+                        weight: 1,
+                        fillColor: '#fff9c4',
+                        fillOpacity: 0.3
+                    },
+                    onEachFeature: function(feature, layer) {
+                        if (feature.properties && feature.properties.name) {
+                            layer.bindPopup(`<b>🏘️ Khu dân cư:</b> ${feature.properties.name}`);
+                        }
+                    }
+                }).addTo(layerGroups.residential);
+                console.log('✅ Loaded residential layer');
+            } catch(e) {
+                console.warn('⚠️ Error loading residential:', e);
+            }
+        }
+
+        // 4. Trạm biến áp (đỏ)
+        if (substationsData && substationsData.length > 0) {
+            substationsData.forEach(sub => {
+                L.circleMarker([sub.lat, sub.lon], {
+                    radius: 6,
+                    color: '#e74c3c',
+                    fillColor: '#e74c3c',
+                    fillOpacity: 0.8,
+                    weight: 2
+                }).bindPopup(`<b>⚡ Trạm biến áp</b><br>${sub.name}`)
+                  .addTo(layerGroups.substations);
+            });
+            console.log('✅ Loaded substations:', substationsData.length);
+        }
+
+        // 5. POI (xanh dương nhạt)
+        if (poiData && poiData.length > 0) {
+            const poiIcons = {
+                'school': '🏫',
+                'hospital': '🏥',
+                'mall': '🏬',
+                'supermarket': '🛒',
+                'park': '🌳',
+                'default': '📍'
+            };
+            
+            poiData.forEach(poi => {
+                const icon = poiIcons[poi.type] || poiIcons['default'];
+                L.circleMarker([poi.lat, poi.lon], {
+                    radius: 4,
+                    color: '#3498db',
+                    fillColor: '#3498db',
+                    fillOpacity: 0.6,
+                    weight: 1
+                }).bindPopup(`${icon} <b>${poi.name || poi.type}</b>`)
+                  .addTo(layerGroups.poi);
+            });
+            console.log('✅ Loaded POI:', poiData.length);
+        }
+
+        // 6. Trạm sạc EV (marker màu theo điểm)
+        stations.forEach(station => {
+            const color = station.score >= 70 ? 'green' : 
+                         station.score >= 50 ? 'blue' : 'orange';
+            
+            L.marker([station.lat, station.lon], {
+                icon: L.icon({
+                    iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41],
+                    popupAnchor: [1, -34]
+                })
+            })
+            .bindPopup(`
+                <b>🔌 Trạm #${station.id}</b><br>
+                <hr style="margin: 5px 0;">
+                ⭐ Điểm: <b>${station.score.toFixed(1)}/100</b><br>
+                🌍 Lat: ${station.lat.toFixed(6)}<br>
+                🌍 Lon: ${station.lon.toFixed(6)}
+            `)
+            .addTo(layerGroups.evStations);
+        });
+        console.log('✅ Loaded', stations.length, 'stations on map');
+
+        // Layer control để bật/tắt lớp
+        const overlays = {
+            "🔌 Trạm sạc EV": layerGroups.evStations,
+            "🗺️ Ranh giới Hà Nội": layerGroups.boundary,
+            "🛣️ Đường giao thông": layerGroups.roads,
+            "🏘️ Khu dân cư": layerGroups.residential,
+            "⚡ Trạm biến áp": layerGroups.substations,
+            "📍 POI": layerGroups.poi,
+            "🚗 Đường đi tìm được": layerGroups.routes
+        };
+        L.control.layers(null, overlays, {position: 'topright'}).addTo(map);
+
+        // Variables for route
+        let userMarker = null;
+        let routeLine = null;
+
+        // Find route function
+        async function findRoute() {
+            const input = document.getElementById('locationInput').value.trim();
+            
+            if (!input) {
+                alert('⚠️ Vui lòng nhập địa điểm hoặc tọa độ');
+                return;
+            }
+
+            // Check if input is coordinates
+            const coords = input.split(',').map(x => parseFloat(x.trim()));
+            
+            if (coords.length === 2 && !isNaN(coords[0]) && !isNaN(coords[1])) {
+                await findNearestStation(coords[0], coords[1]);
+            } else {
+                // Geocode address using Nominatim - lấy nhiều kết quả
+                showLoading();
+                try {
+                    const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input)}, Hanoi, Vietnam`);
+                    const data = await response.json();
+                    
+                    if (data.length === 0) {
+                        alert('❌ Không tìm thấy địa điểm');
+                        hideLoading();
+                    } else if (data.length === 1) {
+                        // Chỉ có 1 kết quả -> tìm luôn
+                        await findNearestStation(parseFloat(data[0].lat), parseFloat(data[0].lon));
+                    } else {
+                        // Nhiều kết quả -> hiển thị danh sách để chọn
+                        hideLoading();
+                        showLocationOptions(data);
+                    }
+                } catch (error) {
+                    alert('❌ Lỗi: ' + error.message);
+                    hideLoading();
+                }
+            }
+        }
+
+        // Show location options for user to choose
+        function showLocationOptions(locations) {
+            const optionsList = document.getElementById('options-list');
+            const optionsDiv = document.getElementById('location-options');
+            const resultDiv = document.getElementById('result');
+            
+            // Clear previous options
+            optionsList.innerHTML = '';
+            resultDiv.style.display = 'none';
+            
+            // Create option for each location
+            locations.forEach((loc, index) => {
+                const option = document.createElement('div');
+                option.className = 'location-option';
+                option.onclick = async () => {
+                    optionsDiv.style.display = 'none';
+                    await findNearestStation(parseFloat(loc.lat), parseFloat(loc.lon));
+                };
+                
+                // Extract clean name
+                const nameParts = loc.display_name.split(',');
+                const cleanName = nameParts[0].trim();
+                const district = nameParts[1] ? nameParts[1].trim() : '';
+                
+                const name = document.createElement('div');
+                name.className = 'name';
+                name.innerHTML = `<i class="fas fa-map-marker-alt"></i>${cleanName}`;
+                
+                const address = document.createElement('div');
+                address.className = 'address';
+                // Show only relevant address parts (first 3-4 parts)
+                const addressParts = nameParts.slice(0, 4).join(', ');
+                address.textContent = addressParts;
+                
+                // Type badge with cleaner display
+                const type = document.createElement('div');
+                type.className = 'type';
+                const typeText = loc.type || loc.class || 'location';
+                type.textContent = typeText;
+                
+                option.appendChild(name);
+                option.appendChild(address);
+                option.appendChild(type);
+                optionsList.appendChild(option);
+            });
+            
+            optionsDiv.style.display = 'block';
+        }
+
+        // Use GPS
+        function useGPS() {
+            if (!navigator.geolocation) {
+                alert('❌ Trình duyệt không hỗ trợ GPS');
+                return;
+            }
+
+            showLoading();
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    await findNearestStation(position.coords.latitude, position.coords.longitude);
+                    hideLoading();
+                },
+                (error) => {
+                    hideLoading();
+                    alert('❌ Không thể lấy vị trí: ' + error.message);
+                }
+            );
+        }
+
+        // Find nearest station via backend API
+        async function findNearestStation(lat, lon) {
+            showLoading();
+            
+            try {
+                const response = await fetch('/api/find_route', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lon })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Hide location options
+                    document.getElementById('location-options').style.display = 'none';
+                    
+                    // Clear old markers/lines
+                    if (userMarker) map.removeLayer(userMarker);
+                    if (routeLine) map.removeLayer(routeLine);
+
+                    // Add user marker
+                    userMarker = L.marker([lat, lon], {
+                        icon: L.icon({
+                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41]
+                        })
+                    }).addTo(map).bindPopup('📍 Vị trí của bạn').openPopup();
+
+                    // Clear old routes
+                    layerGroups.routes.clearLayers();
+                    
+                    // Draw optimal route từ OSRM
+                    if (data.route_geometry) {
+                        const coords = data.route_geometry.coordinates.map(c => [c[1], c[0]]);
+                        routeLine = L.polyline(coords, {
+                            color: '#2196F3',
+                            weight: 6,
+                            opacity: 0.8
+                        }).addTo(layerGroups.routes);
+                        
+                        // Add route layer to map if not already
+                        if (!map.hasLayer(layerGroups.routes)) {
+                            layerGroups.routes.addTo(map);
+                        }
+                    } else {
+                        // Fallback: đường thẳng nét đứt
+                        routeLine = L.polyline(
+                            [[lat, lon], [data.station.lat, data.station.lon]],
+                            { color: '#2196F3', weight: 4, opacity: 0.6, dashArray: '10, 10' }
+                        ).addTo(layerGroups.routes);
+                        
+                        if (!map.hasLayer(layerGroups.routes)) {
+                            layerGroups.routes.addTo(map);
+                        }
+                    }
+
+                    // Show result
+                    document.getElementById('stationId').textContent = `#${data.station.id}`;
+                    document.getElementById('distance').textContent = `${data.distance} km`;
+                    document.getElementById('duration').textContent = data.duration ? `${data.duration} phút` : 'N/A';
+                    document.getElementById('score').textContent = `${data.station.score.toFixed(1)}/100`;
+                    document.getElementById('result').style.display = 'block';
+
+                    // Zoom to route
+                    map.fitBounds([[lat, lon], [data.station.lat, data.station.lon]], { padding: [50, 50] });
+                } else {
+                    alert('❌ ' + data.error);
+                }
+            } catch (error) {
+                alert('❌ Lỗi: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('active');
+        }
+
+        console.log(`✅ Loaded ${stations.length} stations on map`);
+    </script>
+</body>
+</html>
