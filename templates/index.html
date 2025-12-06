@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Charging Station Optimizer - Tối ưu trạm sạc xe điện</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Font Awesome removed to avoid tracking warnings -->
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <h1>⚡ EV Charging Optimizer</h1>
+            <ul class="nav-menu">
+                <li><a href="/" class="active">Trang chủ</a></li>
+                <li><a href="/map">Bản đồ</a></li>
+                <li><a href="#about">Giới thiệu</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <h2>🚗 Tối ưu hóa vị trí trạm sạc xe điện</h2>
+            <p>Ứng dụng AI giúp tìm vị trí tối ưu cho trạm sạc EV tại Hà Nội</p>
+        </section>
+
+        <section class="optimization-panel">
+            <h3>⚙️ Cấu hình tối ưu</h3>
+            <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                ⚠️ <strong>Lưu ý:</strong> Với 100 stations + 100 generations có thể mất <strong>5-10 phút</strong>. Dùng giá trị nhỏ để test nhanh (20/20/20 ~ 30 giây).
+            </div>
+            
+            <div class="form-group">
+                <label for="num_stations">
+                    <i class="fas fa-plug"></i> Số trạm sạc:
+                </label>
+                <input type="number" id="num_stations" value="20" min="10" max="500">
+                <span class="help-text">Số lượng trạm sạc muốn tối ưu (10-500) - 🔥 Test: dùng 20</span>
+            </div>
+
+            <div class="form-group">
+                <label for="population">
+                    <i class="fas fa-users"></i> Kích thước quần thể:
+                </label>
+                <input type="number" id="population" value="20" min="20" max="200">
+                <span class="help-text">Số lượng cá thể trong thuật toán di truyền - 🔥 Test: dùng 20</span>
+            </div>
+
+            <div class="form-group">
+                <label for="generations">
+                    <i class="fas fa-dna"></i> Số thế hệ:
+                </label>
+                <input type="number" id="generations" value="20" min="10" max="500">
+                <span class="help-text">Số thế hệ tiến hóa của thuật toán - 🔥 Test: dùng 20</span>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-optimize" class="btn btn-primary">
+                    <i class="fas fa-play"></i> Bắt đầu tối ưu
+                </button>
+                <button id="btn-upload" class="btn btn-secondary">
+                    <i class="fas fa-upload"></i> Upload dữ liệu
+                </button>
+            </div>
+
+            <div id="progress-bar" class="progress-bar hidden">
+                <div class="progress-fill"></div>
+                <span class="progress-text">Đang xử lý... 0%</span>
+            </div>
+        </section>
+
+        <section class="results-panel hidden" id="results">
+            <h3>📊 Kết quả tối ưu</h3>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h4 id="stat-stations">0</h4>
+                    <p>Trạm sạc</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-star"></i>
+                    <h4 id="stat-score">0</h4>
+                    <p>Điểm trung bình</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-road"></i>
+                    <h4 id="stat-coverage">0%</h4>
+                    <p>Phủ sóng</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock"></i>
+                    <h4 id="stat-time">0s</h4>
+                    <p>Thời gian xử lý</p>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="btn-view-map" class="btn btn-primary">
+                    <i class="fas fa-map"></i> Xem bản đồ
+                </button>
+                <button id="btn-export-geojson" class="btn btn-secondary">
+                    <i class="fas fa-file-code"></i> Xuất GeoJSON
+                </button>
+                <button id="btn-export-excel" class="btn btn-secondary">
+                    <i class="fas fa-file-excel"></i> Xuất Excel
+                </button>
+                <button id="btn-export-shp" class="btn btn-secondary">
+                    <i class="fas fa-map-marked"></i> Xuất Shapefile
+                </button>
+            </div>
+        </section>
+
+        <section class="features" id="about">
+            <h3>✨ Tính năng nổi bật</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <i class="fas fa-brain"></i>
+                    <h4>Thuật toán AI</h4>
+                    <p>Sử dụng thuật toán di truyền để tối ưu vị trí trạm sạc</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h4>Bản đồ tương tác</h4>
+                    <p>Xem kết quả trực quan trên bản đồ với Folium/Leaflet</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-route"></i>
+                    <h4>Tìm đường thông minh</h4>
+                    <p>Tính toán tuyến đường tối ưu đến trạm gần nhất</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Phân tích chi tiết</h4>
+                    <p>Báo cáo đầy đủ về độ phủ, khoảng cách, điểm số</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 EV Charging Station Optimizer. Developed for GIS Project.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

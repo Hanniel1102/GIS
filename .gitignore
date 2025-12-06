@@ -1,0 +1,36 @@
+﻿# Large data files (>50MB)
+data/vietnam-latest-free.shp.zip
+data/roads_hanoi_full.dbf
+data/roads_hanoi_full.shp
+data/roads_hanoi_full.shx
+data/roads_hanoi_full.prj
+data/roads_hanoi_full.cpg
+
+# Temporary files
+data/exports/*
+data/uploads/*
+static/temp_map.html
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
