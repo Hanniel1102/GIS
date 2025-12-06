@@ -205,17 +205,40 @@ def find_route():
         from algorithms.route_finder import find_nearest_station
         
         if stations_data is None:
-            return jsonify({'success': False, 'error': 'No data'}), 404
+            print("⚠️ No stations data loaded")
+            return jsonify({'success': False, 'error': 'No station data available'}), 404
         
         data = request.get_json()
+        if not data:
+            print("⚠️ No JSON data received")
+            return jsonify({'success': False, 'error': 'No data received'}), 400
+            
         user_lat = data.get('lat')
         user_lon = data.get('lon')
         
-        if not user_lat or not user_lon:
-            return jsonify({'success': False, 'error': 'Missing coordinates'}), 400
+        if user_lat is None or user_lon is None:
+            print(f"⚠️ Missing coordinates: lat={user_lat}, lon={user_lon}")
+            return jsonify({'success': False, 'error': 'Missing coordinates (lat, lon required)'}), 400
+        
+        # Validate coordinates
+        try:
+            user_lat = float(user_lat)
+            user_lon = float(user_lon)
+        except (ValueError, TypeError):
+            print(f"⚠️ Invalid coordinates: lat={user_lat}, lon={user_lon}")
+            return jsonify({'success': False, 'error': 'Invalid coordinate format'}), 400
+        
+        # Check if coordinates are in reasonable range for Hanoi
+        if not (20.5 <= user_lat <= 21.5 and 105.0 <= user_lon <= 106.5):
+            print(f"⚠️ Coordinates out of range: lat={user_lat}, lon={user_lon}")
+            return jsonify({'success': False, 'error': 'Coordinates outside Hanoi area'}), 400
         
         # Tìm trạm có đường đi ngắn nhất
         result = find_nearest_station(user_lat, user_lon, stations_data)
+        
+        if not result or 'station' not in result:
+            print("⚠️ No station found")
+            return jsonify({'success': False, 'error': 'Could not find nearest station'}), 500
         
         return jsonify({
             'success': True,
@@ -227,8 +250,10 @@ def find_route():
         })
         
     except Exception as e:
-        print(f"❌ Error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 400
+        print(f"❌ Error in find_route: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': f'Server error: {str(e)}'}), 500
 
 
 @app.route('/health')
